@@ -1,10 +1,11 @@
 import Plot from "react-plotly.js"
-import { FaHeartbeat, FaHeart } from "react-icons/fa";
+import { FaHeartbeat, FaHeart, FaBatteryQuarter, FaBatteryHalf, FaBatteryEmpty } from "react-icons/fa";
 import { IoWarning, IoCheckmarkSharp } from "react-icons/io5";
 import { FaLungs, FaBell, FaPersonWalking, FaBatteryThreeQuarters, FaShieldHalved } from "react-icons/fa6";
 import { MdPhoneInTalk } from "react-icons/md";
 import { GrCircleAlert } from "react-icons/gr";
 import { BsWatch } from "react-icons/bs";
+import { useState, useEffect } from "react";
 
 function HeartRateChart() {
   return (
@@ -108,6 +109,73 @@ function SpO2Chart() {
 }
 
 export default function Dashboard() {
+  const [bpm, setBpm] = useState(78);
+  const [spo2, setSpo2] = useState(98);
+  const [battery, setBattery] = useState(72);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setBattery(prev => {
+        if (prev <= 0) return 0;
+
+        // 20% chance to drop by 1%
+        const shouldDrop = Math.random() < 0.2;
+
+        return shouldDrop ? prev - 1 : prev;
+      });
+    }, 15000); // check every 15s (realistic)
+
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const min = 97;
+      const max = 99;
+
+      // Small realistic fluctuation
+      const randomSpO2 =
+        Math.floor(Math.random() * (max - min + 1)) + min;
+
+      setSpo2(randomSpO2);
+    }, 3000); // slower change (3s feels clinical)
+
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setBpm(prev => {
+        const changeChance = Math.random();
+
+        // 70% chance: stay the same
+        if (changeChance < 0.7) return prev;
+
+        // 30% chance: change by ±1
+        const delta = Math.random() < 0.5 ? -1 : 1;
+        const next = prev + delta;
+
+        return Math.min(79, Math.max(76, next));
+      });
+    }, 2500); // 2.5s feels clinical
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const getBatteryStatus = (battery:number) => {
+    if (battery >= 50) return "GOOD";
+    if (battery >= 20) return "FAIR";
+    return "POOR";
+  };
+
+  const getBatteryIcon = (battery:number) => {
+    if (battery >= 70) return <FaBatteryThreeQuarters className="text-[30px]" />;
+    if (battery >= 40) return <FaBatteryHalf className="text-[30px]" />;
+    if (battery >= 15) return <FaBatteryQuarter className="text-[30px]" />;
+    return <FaBatteryEmpty className="text-[30px]" />;
+  };
+
+
   return (
     <div className="flex h-screen text-white">
         <aside id="sidebar" className="md:w-64 bg-gray-800 md:flex flex-col hidden">
@@ -116,7 +184,7 @@ export default function Dashboard() {
                     <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-pink-500 rounded-lg flex items-center justify-center">
                         <img src="logo.png" className="w-[80%]" />
                     </div>
-                    <span className="ml-3 text-xl font-bold font-[inter] hidden md:block">nitVitals</span>
+                    <span className="ml-3 text-xl font-bold font-[inter] hidden md:block">nitvitals</span>
                 </div>
             </div>
             
@@ -223,7 +291,7 @@ export default function Dashboard() {
                             <span className="text-xs bg-[#ffffff33] px-3 py-1 rounded-full">NORMAL</span>
                         </div>
                         <div className="mb-2">
-                            <div className="text-5xl font-bold">78</div>
+                            <div className="text-5xl font-bold">{bpm}</div>
                             <div className="text-sm opacity-90">BPM</div>
                         </div>
                         <div className="text-xs opacity-75">Heart Rate</div>
@@ -237,7 +305,7 @@ export default function Dashboard() {
                             <span className="text-xs bg-[#ffffff33] bg-opacity-20 px-3 py-1 rounded-full">NORMAL</span>
                         </div>
                         <div className="mb-2">
-                            <div className="text-5xl font-bold">98</div>
+                            <div className="text-5xl font-bold">{spo2}</div>
                             <div className="text-sm opacity-90">%</div>
                         </div>
                         <div className="text-xs opacity-75">Blood Oxygen (SpO₂)</div>
@@ -260,12 +328,14 @@ export default function Dashboard() {
                     <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl p-6 shadow-xl">
                         <div className="flex items-center justify-between mb-4">
                             <div className="w-12 h-12 bg-[#ffffff33] bg-opacity-20 rounded-xl flex items-center justify-center">
-                                <FaBatteryThreeQuarters className="text-[30px]"/>
+                                {getBatteryIcon(battery)}
                             </div>
-                            <span className="text-xs bg-[#ffffff33] bg-opacity-20 px-3 py-1 rounded-full">GOOD</span>
+                            <span className="text-xs bg-[#ffffff33] bg-opacity-20 px-3 py-1 rounded-full">
+                                {getBatteryStatus(battery)}
+                            </span>
                         </div>
                         <div className="mb-2">
-                            <div className="text-5xl font-bold">72</div>
+                            <div className="text-5xl font-bold">{battery}</div>
                             <div className="text-sm opacity-90">%</div>
                         </div>
                         <div className="text-xs opacity-75">Device Battery</div>
